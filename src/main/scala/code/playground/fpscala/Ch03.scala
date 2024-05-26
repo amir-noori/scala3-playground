@@ -31,6 +31,10 @@ object List {
     case Cons(h, t) => t
     case Nil => sys.error("tail of empty list")
 
+  def head[A](l: List[A]): A = l match
+    case Cons(h, t) => h
+    case Nil => sys.error("tail of empty list")
+
   def setHead[A](l: List[A], a: A): List[A] = l match
     case Cons(h, t) => Cons(a, t)
     case Nil => sys.error("set head of empty list")
@@ -111,6 +115,63 @@ object List {
   def concat[A](l: List[List[A]]): List[A] =
     foldRightViaFoldLeft(l, Nil: List[A], appendViaFoldLeft)
 
+  def inc(l: List[Int]): List[Int] =
+    foldLeft[Int, List[Int]](reverse(l), Nil: List[Int], (i, acc) => Cons(i + 1, acc))
+
+  def doubleToStr(l: List[Double]): List[String] =
+    foldRight[Double, List[String]](l, Nil: List[String], (i, acc) => Cons(s"*${i}*", acc))
+
+  def map[A, B](l: List[A], f: A => B): List[B] =
+    foldRight[A, List[B]](l, Nil: List[B], (a, acc) => Cons(f(a), acc))
+
+  def filter[A](l: List[A], f: A => Boolean): List[A] =
+    foldRight(l, Nil: List[A], (a, acc) => if f(a) then Cons(a, acc) else acc)
+
+  def filterViaFlatMap[A](l: List[A], f: A => Boolean): List[A] =
+    flatMap(l, a => if f(a) then List(a) else Nil)
+
+  def flatMap[A, B](l: List[A], f: A => List[B]): List[B] =
+    foldRight[A, List[B]](l, Nil: List[B], (a, acc) => append(f(a), acc))
+
+  def mergeLists[A, B, C](l1: List[A], l2: List[B], f: (A, B) => C): List[C] =
+    (l1, l2) match
+      case (Cons(h1, t1), Cons(h2, t2)) => Cons(f(h1, h2), mergeLists(t1, t2, f))
+      case (Nil, _) => Nil
+      case (_, Nil) => Nil
+
+  def hasSubsequence[A](l: List[A], sub: List[A]): Boolean = {
+
+    @tailrec
+    def go(as: List[A], s: List[A], stillMatching: Boolean, from: List[A]): Boolean = {
+      (as, s) match
+        case (Cons(h1, t1), Cons(h2, t2)) =>
+          if (h1 != h2) {
+            if (stillMatching)
+              go(tail(from), sub, false, tail(from))
+            else
+              go(t1, s, false, t1)
+          } else {
+            go(t1, t2, true, from)
+          }
+        case (Nil, Nil) => stillMatching
+        case (Nil, _) => false
+        case (_, Nil) => true
+    }
+
+    go(l, sub, false, l)
+  }
+
+  @annotation.tailrec
+  def startsWith[A](l: List[A], prefix: List[A]): Boolean = (l, prefix) match
+    case (_, Nil) => true
+    case (Cons(h, t), Cons(h2, t2)) if h == h2 => startsWith(t, t2)
+    case _ => false
+
+  @annotation.tailrec
+  def hasSubsequence_v2[A](sup: List[A], sub: List[A]): Boolean = sup match
+    case Nil => sub == Nil
+    case _ if startsWith(sup, sub) => true
+    case Cons(h, t) => hasSubsequence_v2(t, sub)
 
 }
 
@@ -118,8 +179,9 @@ object List {
 @main
 def main(): Unit = {
   val l: List[Int] = List(1, 2, 3, 4)
+  val ld: List[Double] = List(1, 2, 3, 4)
   val l2: List[Int] = List(10, 20, 30, 40)
-  val ll: List[List[Int]] = List(List(1, 2, 3), List(4, 5 , 6), List(7, 8, 9))
+  val ll: List[List[Int]] = List(List(1, 2, 3), List(4, 5, 6), List(7, 8, 9))
   println("list sum: " + List.sumViaFoldRight(l))
   println("list product: " + List.productViaFoldRight(l))
   println("list init: " + List.init_v2(l))
@@ -128,4 +190,11 @@ def main(): Unit = {
   println("list appendViaFoldLeft: " + List.appendViaFoldLeft(l, l2))
   println("list appendViaFoldRight: " + List.appendViaFoldRight(l, l2))
   println("list concat: " + List.concat(ll))
+  println("list inc: " + List.inc(l))
+  println("list doubleToStr: " + List.doubleToStr(ld))
+  println("list hasSubsequence: " + List.hasSubsequence(l, List(1, 2)))
+  println("list hasSubsequence: " + List.hasSubsequence(l, List(2, 3)))
+  println("list hasSubsequence: " + List.hasSubsequence(l, List(3, 4)))
+  println("list hasSubsequence: " + List.hasSubsequence(l, List(1, 3)))
+  println("list hasSubsequence: " + List.hasSubsequence(l, List(2, 4)))
 }
