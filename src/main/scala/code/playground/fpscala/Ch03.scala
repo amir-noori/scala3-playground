@@ -1,4 +1,4 @@
-package code.playground.fpscala
+package code.playground.fpscala.ch03
 
 import scala.annotation.tailrec
 
@@ -174,6 +174,7 @@ object List {
     case Cons(h, t) => hasSubsequence_v2(t, sub)
 
 }
+
 
 
 @main
